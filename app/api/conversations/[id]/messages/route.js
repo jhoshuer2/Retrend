@@ -79,19 +79,32 @@ export async function POST(req, { params }) {
     const actions = r.status === "fulfilled" ? r.value.actions : [];
 
     const msgId = uid();
-    await sql`
-      INSERT INTO messages (id, conversation_id, user_id, sender, content)
-      VALUES (${msgId}, ${conversationId}, ${userId}, ${character.id}, ${text});
-    `;
-    assistantMessages.push({ id: msgId, sender: character.id, content: text, created_at: new Date().toISOString() });
+    try {
+      await sql`
+        INSERT INTO messages (id, conversation_id, user_id, sender, content)
+        VALUES (${msgId}, ${conversationId}, ${userId}, ${character.id}, ${text});
+      `;
+      assistantMessages.push({ id: msgId, sender: character.id, content: text, created_at: new Date().toISOString() });
+    } catch (e) {
+      console.error("message insert failed", character.id, e);
+      assistantMessages.push({ id: msgId, sender: character.id, content: text, created_at: new Date().toISOString() });
+      continue; // don't try to log actions off a message that failed to save
+    }
 
     for (const action of actions || []) {
-      const taskId = uid();
-      await sql`
-        INSERT INTO tasks (id, user_id, text, why, role, run_id)
-        VALUES (${taskId}, ${userId}, ${action.text}, ${action.why || ""}, ${character.id}, ${conversationId});
-      `;
-      actionsAdded.push({ id: taskId, text: action.text, why: action.why || "", role: character.id });
+      // Defensive: even with a strict tool schema, never let a malformed
+      // tool call take down the whole message send.
+      if (!action?.text || typeof action.text !== "string" || !action.text.trim()) continue;
+      try {
+        const taskId = uid();
+        await sql`
+          INSERT INTO tasks (id, user_id, text, why, role, run_id)
+          VALUES (${taskId}, ${userId}, ${action.text}, ${action.why || ""}, ${character.id}, ${conversationId});
+        `;
+        actionsAdded.push({ id: taskId, text: action.text, why: action.why || "", role: character.id });
+      } catch (e) {
+        console.error("task insert failed", character.id, e);
+      }
     }
   }
 
