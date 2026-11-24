@@ -2,12 +2,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const ROLES = [
-  { id: "strategist", emoji: "🧭", name: "Content Strategist", color: "#4f7cff", tagline: "Plans your content calendar and keeps videos aligned with your goals." },
-  { id: "seo", emoji: "🔎", name: "SEO Content Specialist", color: "#18a999", tagline: "Finds what people are searching for and sharpens titles, tags & descriptions." },
-  { id: "analyst", emoji: "📊", name: "Data Analyst", color: "#c9820f", tagline: "Reads your numbers to find what's actually working (or not)." },
-  { id: "scriptwriter", emoji: "✍️", name: "Scriptwriter", color: "#a855d6", tagline: "Tightens hooks, pacing and structure in your scripts/outlines." },
-  { id: "community", emoji: "💬", name: "Community Manager", color: "#e0557a", tagline: "Reads comments and audience signals to build loyalty." },
-  { id: "social", emoji: "📱", name: "Social Media Manager", color: "#3fb6c9", tagline: "Plans how to repurpose and distribute each video across platforms." },
+  { id: "strategist", emoji: "🧭", name: "Content Strategist", title: "The Strategist", color: "#4f7cff", tagline: "Plans what you make next so it actually serves your goals." },
+  { id: "seo", emoji: "🔎", name: "SEO Content Specialist", title: "The Scout", color: "#18a999", tagline: "Finds what people are already searching for in your niche." },
+  { id: "analyst", emoji: "📊", name: "Data Analyst", title: "The Analyst", color: "#c9820f", tagline: "Reads your numbers to find what's actually working." },
+  { id: "scriptwriter", emoji: "✍️", name: "Scriptwriter", title: "The Wordsmith", color: "#a855d6", tagline: "Sharpens your hooks, pacing and scripts." },
+  { id: "community", emoji: "💬", name: "Community Manager", title: "The Connector", color: "#e0557a", tagline: "Reads your comments to build a loyal audience." },
+  { id: "social", emoji: "📱", name: "Social Media Manager", title: "The Amplifier", color: "#3fb6c9", tagline: "Gets each video in front of more eyes, everywhere." },
 ];
 const roleMap = Object.fromEntries(ROLES.map((r) => [r.id, r]));
 
@@ -240,37 +240,59 @@ export default function Page() {
 
       <div className="main">
         {view === "picker" && (
-          <div className="picker-wrap">
-            <h1>Who's joining?</h1>
-            <p className="hint">Pick one or more roles to bring into the conversation. You can chat with all of them at once, like a group thread.</p>
-            <div className="role-grid">
-              {ROLES.map((r) => {
-                const sel = pickCharacterIds.includes(r.id);
-                return (
-                  <div key={r.id} className={"role-card" + (sel ? " sel" : "")} onClick={() => toggleCharacter(r.id)} style={sel ? { borderColor: r.color } : undefined}>
-                    <div className="check" style={sel ? { background: r.color, borderColor: r.color } : undefined}>{sel ? "✓" : ""}</div>
-                    <div className="top">
-                      <span className="emoji" style={{ background: r.color + "22" }}>{r.emoji}</span>
-                      <span className="rname">{r.name}</span>
+          <div className="arena">
+            <div className="arena-inner">
+              <div className="arena-head">
+                <h1>Choose your crew</h1>
+                <p className="hint">
+                  Pick one or more characters to bring into the conversation — swipe through on mobile, or see everyone at once.
+                </p>
+              </div>
+              <div className="char-track">
+                {ROLES.map((r) => {
+                  const sel = pickCharacterIds.includes(r.id);
+                  return (
+                    <div
+                      key={r.id}
+                      className={"char-card" + (sel ? " sel" : "")}
+                      style={{ "--char-color": r.color }}
+                      onClick={() => toggleCharacter(r.id)}
+                    >
+                      <div className="char-badge">{sel ? "✓" : ""}</div>
+                      <div className="char-portrait">
+                        <div className="char-glow" />
+                        <div className="char-emoji">{r.emoji}</div>
+                      </div>
+                      <div className="char-class">{r.title}</div>
+                      <div className="char-name">{r.name}</div>
+                      <div className="char-tagline">{r.tagline}</div>
                     </div>
-                    <div className="tagline">{r.tagline}</div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-            <label className="live-toggle">
-              <input type="checkbox" checked={pickUseLive} onChange={(e) => setPickUseLive(e.target.checked)} />
-              Connect my live YouTube channel data to this conversation
-            </label>
-            <p className="hint small">
-              We'll pull your channel stats and recent videos when the conversation starts. You can also just paste a specific video link into the chat any time.
-            </p>
-            <div className="save-row">
-              <button className="btn btn-primary" disabled={starting} onClick={startConversation}>
+
+            <div className="squad-bar">
+              <div className="squad-avatars">
+                {pickCharacterIds.length === 0 ? (
+                  <span className="squad-empty">No one selected yet</span>
+                ) : (
+                  pickCharacterIds.map((id) => (
+                    <span key={id} className="mini-avatar lg" style={{ background: roleMap[id].color }} title={roleMap[id].name}>
+                      {roleMap[id].emoji}
+                    </span>
+                  ))
+                )}
+              </div>
+              <label className="live-toggle">
+                <input type="checkbox" checked={pickUseLive} onChange={(e) => setPickUseLive(e.target.checked)} />
+                Live YouTube data
+              </label>
+              <button className="btn btn-primary" disabled={starting || pickCharacterIds.length === 0} onClick={startConversation}>
                 {starting ? "Starting…" : "Start conversation →"}
               </button>
-              <span className="save-note">{pickError}</span>
             </div>
+            {pickError && <div className="arena-error">{pickError}</div>}
           </div>
         )}
 
