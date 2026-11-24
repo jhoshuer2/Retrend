@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserIdForSession } from "./lib/google-auth";
 
 export const config = {
-  matcher: ["/((?!_next|favicon.ico|login|api/auth).*)"],
+  matcher: ["/((?!_next|favicon.ico|login|privacy|terms|api/auth).*)"],
 };
 
 export async function proxy(req) {
