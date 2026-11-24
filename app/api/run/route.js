@@ -12,7 +12,7 @@ export async function POST(req) {
   }
 
   const body = await req.json();
-  const { roleId, question, pastedData, channel } = body || {};
+  const { roleId, question, pastedData, channel, liveData } = body || {};
 
   const role = getRole(roleId);
   if (!role) {
@@ -29,6 +29,7 @@ export async function POST(req) {
       channel: channel || {},
       question,
       pastedData: pastedData || "",
+      liveData: liveData || null,
     });
     return NextResponse.json({ result });
   } catch (err) {

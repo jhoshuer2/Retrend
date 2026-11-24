@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
+import { getUserIdForSession } from "./lib/google-auth";
 
 export const config = {
   matcher: ["/((?!_next|favicon.ico|login|api/auth).*)"],
 };
 
-export function proxy(req) {
-  const password = process.env.APP_PASSWORD;
-  // If no password is configured, don't lock the owner out — but this
-  // means the deployment is open to anyone with the URL.
-  if (!password) return NextResponse.next();
+export async function proxy(req) {
+  const token = req.cookies.get("mh_session")?.value;
+  const userId = await getUserIdForSession(token).catch(() => null);
 
-  const cookie = req.cookies.get("mh_session")?.value;
-  if (cookie === password) return NextResponse.next();
+  if (userId) {
+    const headers = new Headers(req.headers);
+    headers.set("x-user-id", userId);
+    return NextResponse.next({ request: { headers } });
+  }
 
   if (req.nextUrl.pathname.startsWith("/api")) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -1,32 +1,23 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const ERROR_MESSAGES = {
+  access_denied: "You declined access, or Google blocked this account (it may not be on the test-user list yet).",
+  state_mismatch: "That sign-in link expired — try again.",
+};
 
 export default function LoginPage() {
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  async function submit(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (!res.ok) {
-        setError("Wrong password.");
-        setLoading(false);
-        return;
-      }
-      const params = new URLSearchParams(window.location.search);
-      window.location.href = params.get("next") || "/";
-    } catch (err) {
-      setError("Something went wrong.");
-      setLoading(false);
-    }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const e = params.get("error");
+    if (e) setError(ERROR_MESSAGES[e] || e);
+  }, []);
+
+  function signIn() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/api/auth/google/start" + (params.get("next") ? "" : "");
   }
 
   return (
@@ -39,60 +30,81 @@ export default function LoginPage() {
         background: "#0f0e13",
         color: "#f1eef7",
         fontFamily: "Inter, system-ui, sans-serif",
+        padding: 16,
       }}
     >
-      <form
-        onSubmit={submit}
+      <div
         style={{
           background: "#1b1922",
           border: "1px solid #2d2a36",
           borderRadius: 14,
-          padding: 28,
-          width: 320,
+          padding: 32,
+          width: 360,
+          textAlign: "center",
         }}
       >
-        <div style={{ fontSize: 22, marginBottom: 4 }}>🎬</div>
-        <h1 style={{ fontSize: 18, margin: "0 0 4px" }}>Multi-Hat</h1>
-        <p style={{ fontSize: 13, color: "#847e96", margin: "0 0 18px" }}>
-          Private tool — enter the password to continue.
+        <div style={{ fontSize: 30, marginBottom: 8 }}>🎬</div>
+        <h1 style={{ fontSize: 20, margin: "0 0 6px" }}>Multi-Hat</h1>
+        <p style={{ fontSize: 13.5, color: "#847e96", margin: "0 0 24px", lineHeight: 1.5 }}>
+          Sign in with the Google account that runs your YouTube channel. We'll only read your
+          channel's public info, stats and videos — never post or change anything.
         </p>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          autoFocus
-          style={{
-            width: "100%",
-            background: "#15131b",
-            border: "1px solid #2d2a36",
-            color: "#f1eef7",
-            borderRadius: 9,
-            padding: "10px 12px",
-            fontSize: 14,
-            marginBottom: 12,
-          }}
-        />
         {error && (
-          <div style={{ color: "#ff8a8a", fontSize: 12.5, marginBottom: 10 }}>{error}</div>
+          <div
+            style={{
+              color: "#ffd7d2",
+              background: "#3a2126",
+              border: "1px solid #5a2e2e",
+              borderRadius: 9,
+              padding: "10px 12px",
+              fontSize: 12.5,
+              marginBottom: 16,
+              textAlign: "left",
+              lineHeight: 1.5,
+            }}
+          >
+            {error}
+          </div>
         )}
         <button
-          type="submit"
-          disabled={loading}
+          onClick={signIn}
           style={{
             width: "100%",
-            background: "linear-gradient(135deg,#ff5d5d,#ff7a52)",
+            background: "#fff",
             color: "#1b0d0d",
             border: "none",
             borderRadius: 999,
-            padding: "11px 0",
+            padding: "12px 0",
             fontWeight: 700,
+            fontSize: 14,
             cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
           }}
         >
-          {loading ? "Checking..." : "Enter"}
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"
+            />
+            <path
+              fill="#34A853"
+              d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"
+            />
+            <path
+              fill="#EA4335"
+              d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"
+            />
+          </svg>
+          Continue with Google
         </button>
-      </form>
+      </div>
     </div>
   );
 }

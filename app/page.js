@@ -30,11 +30,20 @@ export default function Page() {
   const [taskFilter, setTaskFilter] = useState("open");
   const [historyModal, setHistoryModal] = useState(null);
   const [addedTaskIds, setAddedTaskIds] = useState(new Set());
+  const [user, setUser] = useState(null);
+  const [useLiveData, setUseLiveData] = useState(false);
+  const [liveStatus, setLiveStatus] = useState(""); // "", "loading", "ready", "error"
+  const [liveError, setLiveError] = useState("");
+  const [liveSnapshot, setLiveSnapshot] = useState(null); // { channel, analytics, videos }
 
   useEffect(() => {
     const h = (window.location.hash || "").replace("#", "");
     if (["ask", "tasks", "history", "setup"].includes(h)) setTab(h);
 
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setUser(d.user || null))
+      .catch(() => {});
     fetch("/api/profile")
       .then((r) => r.json())
       .then((d) => d.channel && setChannel((c) => ({ ...c, ...d.channel })))
@@ -48,6 +57,36 @@ export default function Page() {
       .then((d) => setRuns(d.runs || []))
       .catch(() => {});
   }, []);
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = "/login";
+  }
+
+  async function fetchLiveData(roles) {
+    setLiveStatus("loading");
+    setLiveError("");
+    try {
+      const needsComments = roles.some((r) => r.id === "community");
+      const needsTranscript = roles.some((r) => r.id === "scriptwriter" || r.id === "seo");
+      const [chRes, vidRes] = await Promise.all([
+        fetch("/api/youtube/channel"),
+        fetch(`/api/youtube/videos?limit=8&comments=${needsComments}&transcript=${needsTranscript}`),
+      ]);
+      const chData = await chRes.json();
+      const vidData = await vidRes.json();
+      if (!chRes.ok) throw new Error(chData.error || "Could not load your channel.");
+      if (!vidRes.ok) throw new Error(vidData.error || "Could not load your videos.");
+      const snapshot = { channel: chData.channel, analytics: chData.analytics, videos: vidData.videos || [] };
+      setLiveSnapshot(snapshot);
+      setLiveStatus("ready");
+      return snapshot;
+    } catch (err) {
+      setLiveError(err.message);
+      setLiveStatus("error");
+      return null;
+    }
+  }
 
   function goTab(t) {
     setTab(t);
@@ -91,6 +130,16 @@ export default function Page() {
     const chosen = ROLES.filter((r) => selectedRoles.includes(r.id));
     setLoadingRoleIds(chosen.map((r) => r.id));
 
+    let liveData = null;
+    if (useLiveData) {
+      liveData = await fetchLiveData(chosen);
+      if (!liveData) {
+        setLoadingRoleIds([]);
+        setRunNote("Couldn't load your YouTube data — see the error above, or turn off live data and paste instead.");
+        return;
+      }
+    }
+
     const runId = uid();
     const roleResults = {};
 
@@ -100,7 +149,7 @@ export default function Page() {
           const res = await fetch("/api/run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roleId: role.id, question, pastedData, channel }),
+            body: JSON.stringify({ roleId: role.id, question, pastedData, channel, liveData }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Request failed.");
@@ -121,12 +170,13 @@ export default function Page() {
       pastedData,
       roles: chosen.map((r) => r.id),
       roleResults,
+      usedLiveData: !!liveData,
     };
     setRuns((prev) => [run, ...prev]);
     fetch("/api/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: runId, question, pastedData, channelSnapshot: channel, roles: run.roles, roleResults }),
+      body: JSON.stringify({ id: runId, question, pastedData, channelSnapshot: channel, roles: run.roles, roleResults, usedLiveData: !!liveData }),
     }).catch(() => {});
   }
 
@@ -175,6 +225,17 @@ export default function Page() {
             </button>
           ))}
         </nav>
+        {user && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {user.picture && (
+              <img src={user.picture} alt="" width={26} height={26} style={{ borderRadius: "50%" }} />
+            )}
+            <span style={{ fontSize: 12.5, color: "var(--text-dim)" }}>{user.name}</span>
+            <button className="btn btn-ghost btn-sm" onClick={signOut}>
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
 
       {tab === "ask" && (
@@ -208,12 +269,35 @@ export default function Page() {
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="e.g. I'm not getting views — not sure if it's the content, quality, timing, or topic."
             />
-            <label>{dataHintText}</label>
-            <textarea
-              value={pastedData}
-              onChange={(e) => setPastedData(e.target.value)}
-              placeholder="Paste video titles + views, recent comments, a script draft, upload dates..."
-            />
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={useLiveData}
+                onChange={(e) => setUseLiveData(e.target.checked)}
+                style={{ width: 15, height: 15 }}
+              />
+              Use live YouTube data instead of pasting
+            </label>
+            {useLiveData ? (
+              <p className="hint" style={{ margin: "0 0 10px" }}>
+                We'll pull your channel's recent videos, stats, subscriber/watch-time trends, thumbnails,
+                and transcripts (where available) right before running. Note: thumbnail click-through-rate
+                and impressions aren't available from YouTube's API, so those stay out of it either way.
+                {liveStatus === "loading" && " Loading your channel now..."}
+                {liveStatus === "error" && ` ${liveError}`}
+              </p>
+            ) : (
+              <>
+                <label>{dataHintText}</label>
+                <textarea
+                  value={pastedData}
+                  onChange={(e) => setPastedData(e.target.value)}
+                  placeholder="Paste video titles + views, recent comments, a script draft, upload dates..."
+                />
+              </>
+            )}
+
             <div className="save-row">
               <button className="btn btn-primary" disabled={loadingRoleIds.length > 0} onClick={runRoles}>
                 ▶ Run
