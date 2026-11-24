@@ -2,14 +2,103 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const ROLES = [
-  { id: "strategist", emoji: "🧭", name: "Content Strategist", title: "The Strategist", color: "#4f7cff", tagline: "Plans what you make next so it actually serves your goals." },
-  { id: "seo", emoji: "🔎", name: "SEO Content Specialist", title: "The Scout", color: "#18a999", tagline: "Finds what people are already searching for in your niche." },
-  { id: "analyst", emoji: "📊", name: "Data Analyst", title: "The Analyst", color: "#c9820f", tagline: "Reads your numbers to find what's actually working." },
-  { id: "scriptwriter", emoji: "✍️", name: "Scriptwriter", title: "The Wordsmith", color: "#a855d6", tagline: "Sharpens your hooks, pacing and scripts." },
-  { id: "community", emoji: "💬", name: "Community Manager", title: "The Connector", color: "#e0557a", tagline: "Reads your comments to build a loyal audience." },
-  { id: "social", emoji: "📱", name: "Social Media Manager", title: "The Amplifier", color: "#3fb6c9", tagline: "Gets each video in front of more eyes, everywhere." },
+  { id: "strategist", emoji: "🧭", name: "Content Strategist", title: "The Strategist", color: "#4f7cff", accessory: "beanie", tagline: "Plans what you make next so it actually serves your goals." },
+  { id: "seo", emoji: "🔎", name: "SEO Content Specialist", title: "The Scout", color: "#18a999", accessory: "glasses-round", tagline: "Finds what people are already searching for in your niche." },
+  { id: "analyst", emoji: "📊", name: "Data Analyst", title: "The Analyst", color: "#c9820f", accessory: "glasses-rect", tagline: "Reads your numbers to find what's actually working." },
+  { id: "scriptwriter", emoji: "✍️", name: "Scriptwriter", title: "The Wordsmith", color: "#a855d6", accessory: "beret", tagline: "Sharpens your hooks, pacing and scripts." },
+  { id: "community", emoji: "💬", name: "Community Manager", title: "The Connector", color: "#e0557a", accessory: "headset", tagline: "Reads your comments to build a loyal audience." },
+  { id: "social", emoji: "📱", name: "Social Media Manager", title: "The Amplifier", color: "#3fb6c9", accessory: "cap", tagline: "Gets each video in front of more eyes, everywhere." },
 ];
 const roleMap = Object.fromEntries(ROLES.map((r) => [r.id, r]));
+
+function shadeHex(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) + amt, g = ((n >> 8) & 0xff) + amt, b = (n & 0xff) + amt;
+  r = Math.max(Math.min(255, r), 0); g = Math.max(Math.min(255, g), 0); b = Math.max(Math.min(255, b), 0);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function CharacterAvatar({ role }) {
+  const skinId = "skin-" + role.id;
+  const hoodId = "hood-" + role.id;
+  const dark = shadeHex(role.color, -40);
+  return (
+    <svg viewBox="0 0 120 136" className="char-svg" aria-hidden="true">
+      <defs>
+        <radialGradient id={skinId} cx="35%" cy="28%" r="80%">
+          <stop offset="0%" stopColor="#ffe6c8" />
+          <stop offset="100%" stopColor="#e3ad80" />
+        </radialGradient>
+        <linearGradient id={hoodId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={role.color} />
+          <stop offset="100%" stopColor={dark} />
+        </linearGradient>
+      </defs>
+      <g className="char-bob">
+        {/* accessory worn behind the head (hat crowns) */}
+        {role.accessory === "beanie" && <ellipse cx="60" cy="42" rx="37" ry="24" fill={`url(#${hoodId})`} />}
+        {role.accessory === "beret" && <ellipse cx="58" cy="40" rx="40" ry="15" fill={`url(#${hoodId})`} />}
+        {role.accessory === "cap" && <ellipse cx="60" cy="40" rx="37" ry="23" fill={`url(#${hoodId})`} />}
+
+        {/* hoodie / torso */}
+        <path d="M14 136 Q14 96 60 94 Q106 96 106 136 Z" fill={`url(#${hoodId})`} />
+        <circle cx="60" cy="108" r="3" fill={dark} opacity=".6" />
+
+        {/* ears */}
+        <circle cx="25" cy="70" r="8.5" fill={`url(#${skinId})`} />
+        <circle cx="95" cy="70" r="8.5" fill={`url(#${skinId})`} />
+
+        {/* head */}
+        <ellipse cx="60" cy="64" rx="33" ry="35" fill={`url(#${skinId})`} />
+
+        {/* cap bill, drawn after head so it sits forward */}
+        {role.accessory === "cap" && <ellipse cx="60" cy="52" rx="20" ry="7" fill={dark} />}
+        {role.accessory === "beanie" && <circle cx="60" cy="19" r="5" fill={dark} />}
+
+        {/* headset band + earpads */}
+        {role.accessory === "headset" && (
+          <>
+            <path d="M27 58 Q60 14 93 58" stroke={role.color} strokeWidth="5" fill="none" strokeLinecap="round" />
+            <circle cx="27" cy="62" r="7" fill={role.color} />
+            <circle cx="93" cy="62" r="7" fill={role.color} />
+          </>
+        )}
+
+        {/* eyebrows */}
+        <path d="M37 54 q8 -6 16 -2" stroke="#7a5236" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M67 52 q8 -4 16 2" stroke="#7a5236" strokeWidth="3" fill="none" strokeLinecap="round" />
+
+        {/* eyes (blink via CSS) */}
+        <g className="char-eyes">
+          <circle cx="46" cy="65" r="7" fill="#20202a" />
+          <circle cx="48.5" cy="62.5" r="2" fill="#fff" />
+          <circle cx="76" cy="65" r="7" fill="#20202a" />
+          <circle cx="78.5" cy="62.5" r="2" fill="#fff" />
+        </g>
+
+        {/* glasses, drawn over the eyes */}
+        {role.accessory === "glasses-round" && (
+          <g fill="none" stroke="#2c2c35" strokeWidth="2.5">
+            <circle cx="46" cy="65" r="11" />
+            <circle cx="76" cy="65" r="11" />
+            <line x1="57" y1="65" x2="65" y2="65" />
+          </g>
+        )}
+        {role.accessory === "glasses-rect" && (
+          <g fill="none" stroke="#2c2c35" strokeWidth="2.5">
+            <rect x="35" y="56" width="22" height="16" rx="5" />
+            <rect x="65" y="56" width="22" height="16" rx="5" />
+            <line x1="57" y1="64" x2="65" y2="64" />
+          </g>
+        )}
+
+        {/* nose + mouth */}
+        <ellipse cx="61" cy="75" rx="3.4" ry="2.4" fill="#d99a68" opacity=".7" />
+        <path d="M51 85 q9 6 18 0" stroke="#8a5a40" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
 
 function timeAgo(iso) {
   const d = new Date(iso);
@@ -240,37 +329,32 @@ export default function Page() {
 
       <div className="main">
         {view === "picker" && (
-          <div className="arena">
-            <div className="arena-inner">
-              <div className="arena-head">
-                <h1>Choose your crew</h1>
-                <p className="hint">
-                  Pick one or more characters to bring into the conversation — swipe through on mobile, or see everyone at once.
-                </p>
-              </div>
-              <div className="char-track">
-                {ROLES.map((r) => {
-                  const sel = pickCharacterIds.includes(r.id);
-                  return (
-                    <div
-                      key={r.id}
-                      className={"char-card" + (sel ? " sel" : "")}
-                      style={{ "--char-color": r.color }}
-                      onClick={() => toggleCharacter(r.id)}
-                    >
-                      <div className="char-badge">{sel ? "✓" : ""}</div>
-                      <div className="char-portrait">
-                        <div className="char-glow" />
-                        <div className="char-emoji">{r.emoji}</div>
-                      </div>
-                      <div className="char-class">{r.title}</div>
-                      <div className="char-name">{r.name}</div>
-                      <div className="char-tagline">{r.tagline}</div>
-                    </div>
-                  );
-                })}
-              </div>
+          <div className="char-grid-wrap">
+            <div className="char-grid-head">
+              <h1>Choose your crew</h1>
+              <p className="hint">Pick one or more characters to bring into the conversation.</p>
             </div>
+            <div className="char-grid">
+              {ROLES.map((r) => {
+                const sel = pickCharacterIds.includes(r.id);
+                return (
+                  <div
+                    key={r.id}
+                    className={"char-tile" + (sel ? " sel" : "")}
+                    style={{ "--char-color": r.color, "--tile-bg": r.color + "14" }}
+                    onClick={() => toggleCharacter(r.id)}
+                  >
+                    <div className="char-badge">{sel ? "✓" : ""}</div>
+                    <CharacterAvatar role={r} />
+                    <div className="char-caption">
+                      <div className="cls">{r.title}</div>
+                      <div className="nm">{r.name}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {pickError && <div className="picker-error">{pickError}</div>}
 
             <div className="squad-bar">
               <div className="squad-avatars">
@@ -292,7 +376,6 @@ export default function Page() {
                 {starting ? "Starting…" : "Start conversation →"}
               </button>
             </div>
-            {pickError && <div className="arena-error">{pickError}</div>}
           </div>
         )}
 
