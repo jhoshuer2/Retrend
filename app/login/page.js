@@ -27,34 +27,36 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#0f0e13",
-        color: "#f1eef7",
+        background: "#f3f4f7",
+        color: "#14151f",
         fontFamily: "Inter, system-ui, sans-serif",
         padding: 16,
       }}
     >
       <div
         style={{
-          background: "#1b1922",
-          border: "1px solid #2d2a36",
+          background: "#ffffff",
+          border: "1px solid #e3e6ec",
           borderRadius: 14,
           padding: 32,
           width: 360,
           textAlign: "center",
+          boxShadow: "0 1px 2px rgba(16,24,40,.04)",
         }}
       >
         <div style={{ fontSize: 30, marginBottom: 8 }}>🎬</div>
         <h1 style={{ fontSize: 20, margin: "0 0 6px" }}>Multi-Hat</h1>
-        <p style={{ fontSize: 13.5, color: "#847e96", margin: "0 0 24px", lineHeight: 1.5 }}>
-          Sign in with the Google account that runs your YouTube channel. We'll only read your
-          channel's public info, stats and videos — never post or change anything.
+        <p style={{ fontSize: 13.5, color: "#9aa0ae", margin: "0 0 24px", lineHeight: 1.5 }}>
+          Sign in with the Google account that runs your YouTube channel. Your crew of characters
+          will be waiting — we'll only read your channel's public info, stats and videos, never
+          post or change anything.
         </p>
         {error && (
           <div
             style={{
-              color: "#ffd7d2",
-              background: "#3a2126",
-              border: "1px solid #5a2e2e",
+              color: "#9a2f2f",
+              background: "#fdecec",
+              border: "1px solid #f3c6c6",
               borderRadius: 9,
               padding: "10px 12px",
               fontSize: 12.5,
@@ -70,8 +72,8 @@ export default function LoginPage() {
           onClick={signIn}
           style={{
             width: "100%",
-            background: "#fff",
-            color: "#1b0d0d",
+            background: "#3b5bfd",
+            color: "#fff",
             border: "none",
             borderRadius: 999,
             padding: "12px 0",
