@@ -175,6 +175,24 @@ export default function Page() {
     }
   }
 
+  async function deleteConversation(id, e) {
+    e?.stopPropagation();
+    if (!window.confirm("Delete this conversation? This can't be undone.")) return;
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (active?.id === id) {
+      setActive(null);
+      setMessages([]);
+      setView("picker");
+    }
+    fetch(`/api/conversations/${id}`, { method: "DELETE" }).catch(() => {});
+  }
+
+  async function deleteMessage(messageId) {
+    if (!active) return;
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    fetch(`/api/conversations/${active.id}/messages/${messageId}`, { method: "DELETE" }).catch(() => {});
+  }
+
   function toggleCharacter(id) {
     setPickCharacterIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
@@ -321,6 +339,9 @@ export default function Page() {
                   <div className="convo-title">{c.title || "New conversation"}</div>
                   <div className="convo-time">{timeAgo(c.updated_at)}</div>
                 </div>
+                <button className="convo-del" title="Delete conversation" onClick={(e) => deleteConversation(c.id, e)}>
+                  &times;
+                </button>
               </div>
             ))
           )}
@@ -391,6 +412,9 @@ export default function Page() {
               </div>
               <div className="chat-header-title">{active?.title || "Conversation"}</div>
               {active?.live_snapshot && <span className="live-pill">● live data connected</span>}
+              <button className="chat-del-btn" title="Delete conversation" onClick={(e) => deleteConversation(active.id, e)}>
+                🗑
+              </button>
             </div>
             <div className="chat-messages" ref={scrollRef}>
               {loadingChat ? (
@@ -413,13 +437,20 @@ export default function Page() {
                       </div>
                       <div className="msg-col">
                         {!isUser && <div className="msg-sender-name">{role?.name || m.sender}</div>}
-                        <div className="msg-bubble">
-                          {m.shared_video && (
-                            <div className="video-chip">
-                              📎 {m.shared_video.title}
-                            </div>
+                        <div className="msg-bubble-wrap">
+                          <div className="msg-bubble">
+                            {m.shared_video && (
+                              <div className="video-chip">
+                                📎 {m.shared_video.title}
+                              </div>
+                            )}
+                            {m.content}
+                          </div>
+                          {!String(m.id).startsWith("tmp-") && (
+                            <button className="msg-del" title="Delete message" onClick={() => deleteMessage(m.id)}>
+                              &times;
+                            </button>
                           )}
-                          {m.content}
                         </div>
                       </div>
                     </div>
